@@ -1,0 +1,6 @@
+dist
+build
+creds.txt
+warp-path.txt
+loginscript.spec
+__pycache__
