@@ -1,4 +1,4 @@
-# import subprocess
+import subprocess
 import requests
 import sys
 import time
@@ -26,15 +26,23 @@ with open(os.path.join(__location__, "creds.txt")) as creds:
     name = creds.readline()
     password = creds.readline()
 
-# Ineffective
-# try:
-#     with open(os.path.join(__location__, "warp-path.txt")) as warp_path:
-#         path = warp_path.readline().strip()
-#     subprocess.run(path + ' disconnect',
-#                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+# Handle Cloudflare-warp
+warp_status = None
+path = None
+try:
+    with open(os.path.join(__location__, "warp-path.txt")) as warp_path:
+        path = warp_path.readline().strip()
 
-# except:
-#     pass
+    result = subprocess.run(path + ' status',
+                            capture_output=True, text=True)
+    if "Disabled" not in result.stdout:
+        warpStatus = 1      # Warp Allowed to connect
+
+    if warpStatus:
+        subprocess.run(path + ' disable-wifi',
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+except:
+    pass
 
 data = {
     'mode': '191',
@@ -46,14 +54,24 @@ data = {
 try:
     response = requests.post(
         'https://fw.bits-pilani.ac.in:8090/login.xml', headers=headers, data=data)
-    if response.status_code == 200:
-        root = ET.fromstring(response.text)
-        result = root[1].text    # Extract message tag
 
-        if "failed" in result:
-            sys.exit(1)
-        sys.exit(0)
-    else:
-        sys.exit(100)
+    # Uncomment to debug
+    # if response.status_code == 200:
+    #     root = ET.fromstring(response.text)
+    #     result = root[1].text    # Extract message tag
+
+    #     if "failed" in result:
+    #         sys.exit(1)
+    #     sys.exit(0)
+    # else:
+    #     sys.exit(100)
 except Exception as e:
     print('Login Page Unreachable')
+
+
+try:
+    if warpStatus:
+        subprocess.run(path + ' enable-wifi',
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+except:
+    pass
